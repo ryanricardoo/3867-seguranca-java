@@ -4,11 +4,14 @@ import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.UUID;
 
 @Entity
 @Table(name = "usuarios")
 public class Usuario implements UserDetails {
+
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,6 +22,8 @@ public class Usuario implements UserDetails {
     private String nomeUsuario;
     private String biografia;
     private String miniBiografia;
+    private String refreshToken;
+    private LocalDateTime expiracaoRefreshToken;
 
 
     @Override
@@ -54,5 +59,15 @@ public class Usuario implements UserDetails {
 
     public Long getId() {
         return id;
+    }
+
+    public boolean refreshTokenExpirado(){
+        return expiracaoRefreshToken.isBefore(LocalDateTime.now());
+    }
+
+    public String novoRefreshToken(){
+        this.refreshToken = UUID.randomUUID().toString();
+        this.expiracaoRefreshToken = LocalDateTime.now().plusMinutes(120);
+        return refreshToken;
     }
 }

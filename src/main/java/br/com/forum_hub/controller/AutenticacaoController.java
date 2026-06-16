@@ -6,6 +6,7 @@ import br.com.forum_hub.domain.autenticacao.DadosToken;
 import br.com.forum_hub.domain.autenticacao.TokenService;
 import br.com.forum_hub.domain.usuario.Usuario;
 import br.com.forum_hub.domain.usuario.UsuarioRepository;
+import br.com.forum_hub.infra.exception.RegraDeNegocioException;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -33,8 +34,10 @@ public class AutenticacaoController {
         var autenticationToken = new UsernamePasswordAuthenticationToken(dados.email(), dados.senha());
         var authentication = authenticationManager.authenticate(autenticationToken);
 
-        String tokenAcesso = tokenService.gerarToken((Usuario) authentication.getPrincipal());
-        String refreshToken = tokenService.gerarRefreshToken((Usuario) authentication.getPrincipal());
+        var usuario = (Usuario) authentication.getPrincipal();
+        String tokenAcesso = tokenService.gerarToken(usuario);
+        String refreshToken = usuario.novoRefreshToken();
+        usuarioRepository.save(usuario);
 
         return ResponseEntity.ok(new DadosToken(tokenAcesso, refreshToken));
     }
@@ -42,12 +45,17 @@ public class AutenticacaoController {
     @PostMapping("/atualizar-token")
     public ResponseEntity<DadosToken> atualizarToken(@Valid @RequestBody DadosRefreshToken dados){
         var refreshToken = dados.refreshToken();
-        Long idUsuario = Long.valueOf(tokenService.verificarToken(refreshToken));
-        var usuario = usuarioRepository.findById(idUsuario).orElseThrow();
+        var usuario = usuarioRepository.findByRefreshToken(refreshToken)
+                .orElseThrow(() -> new RegraDeNegocioException("Refresh token inválido!"));
+
+        if(usuario.refreshTokenExpirado())
+            throw new RegraDeNegocioException("Refresh token expirado!");
 
         String tokenAcesso = tokenService.gerarToken(usuario);
-        String tokenAtualizacao = tokenService.gerarRefreshToken(usuario);
+        String novoRefreshToken = usuario.novoRefreshToken();
 
-        return ResponseEntity.ok(new DadosToken(tokenAcesso, tokenAtualizacao));
+        usuarioRepository.save(usuario);
+
+        return ResponseEntity.ok(new DadosToken(tokenAcesso, novoRefreshToken));
     }
 }
