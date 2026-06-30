@@ -1,6 +1,7 @@
 package br.com.forum_hub.domain.usuario;
 
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -24,6 +25,23 @@ public class Usuario implements UserDetails {
     private String miniBiografia;
     private String refreshToken;
     private LocalDateTime expiracaoRefreshToken;
+    private Boolean verificado;
+    private String token;
+    private LocalDateTime expiracaoToken;
+
+    public Usuario(){}
+
+    public Usuario(@Valid DadosCadastroUsuario dados, String senhaCriptografada) {
+        this.nomeCompleto = dados.nomeCompleto();
+        this.email = dados.email();
+        this.senha = senhaCriptografada;
+        this.nomeUsuario = dados.nomeUsuario();
+        this.biografia = dados.biografia();
+        this.miniBiografia = dados.miniBiografia();
+        this.verificado = false;
+        this.token = UUID.randomUUID().toString();
+        this.expiracaoToken = LocalDateTime.now().plusMinutes(30);
+    }
 
 
     @Override
