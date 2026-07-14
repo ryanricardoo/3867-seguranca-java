@@ -1,5 +1,6 @@
 package br.com.forum_hub.domain.usuario;
 
+import br.com.forum_hub.infra.email.EmailService;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,9 +15,12 @@ public class UsuarioService implements UserDetailsService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder){
+    private final EmailService emailService;
+
+    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, EmailService emailService){
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
     @Override
@@ -28,6 +32,15 @@ public class UsuarioService implements UserDetailsService {
     public Usuario cadastrar(@Valid DadosCadastroUsuario dados) {
         var senhaCriptografada = passwordEncoder.encode(dados.senha());
         var usuario = new Usuario(dados, senhaCriptografada);
+
+        emailService.enviarEmailVerificacao(usuario);
         return usuarioRepository.save(usuario);
+    }
+
+    @Transactional
+    public void verificarEmail(String codigo) {
+        var usuario = usuarioRepository.findByToken(codigo).orElseThrow(()
+                -> new RuntimeException("Código de verificação inválido!"));
+        usuario.verificar();
     }
 }
