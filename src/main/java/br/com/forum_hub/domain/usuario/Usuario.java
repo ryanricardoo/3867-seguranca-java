@@ -34,11 +34,15 @@ public class Usuario implements UserDetails {
     private LocalDateTime expiracaoToken;
     private boolean ativo;
     private PerfilNome perfilNome;
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "usuarios_perfis",
+            joinColumns = @JoinColumn(name = "usuario_id"),
+            inverseJoinColumns = @JoinColumn(name = "perfil_id"))
     private List<Perfil> perfis;
 
     public Usuario(){}
 
-    public Usuario(@Valid DadosCadastroUsuario dados, String senhaCriptografada) {
+    public Usuario(@Valid DadosCadastroUsuario dados, String senhaCriptografada, Perfil perfil) {
         this.nomeCompleto = dados.nomeCompleto();
         this.email = dados.email();
         this.senha = senhaCriptografada;
@@ -48,6 +52,8 @@ public class Usuario implements UserDetails {
         this.verificado = false;
         this.token = UUID.randomUUID().toString();
         this.expiracaoToken = LocalDateTime.now().plusMinutes(30);
+        this.ativo = false;
+        this.perfis.add(perfil);
     }
 
 

@@ -11,6 +11,7 @@ public class Perfil implements GrantedAuthority {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Enumerated(EnumType.STRING)
     private PerfilNome nome;
 
     @Override
